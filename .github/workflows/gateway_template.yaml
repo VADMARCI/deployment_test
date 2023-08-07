@@ -1,0 +1,112 @@
+name: 'gateway service template'
+
+# Common template for go service build and run
+on:
+  workflow_call:
+    inputs:
+      root-folder:
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
+      branch:
+        required: true
+        type: string
+      service-name:
+        required: true
+        type: string
+      dashed-service-name:
+        required: true
+        type: string
+      namespace:
+        required: true
+        type: string
+      replicas:
+        required: true
+        type: string
+      sub-domain:
+        required: true
+        type: string
+      block-field-suggestion:
+        required: true
+        type: string
+      enable-stack-trace:
+        required: true
+        type: string
+      enable-introspection:
+        required: true
+        type: string
+      max-tokens:
+        required: true
+        type: string
+    secrets:
+      aws-secret-access-key:
+        required: true
+      aws-access-key-id:
+        required: true
+      kube-config-data:
+        required: true
+
+jobs:
+  deploy:
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: LS
+        run: ls -la
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.aws-access-key-id }}
+          aws-secret-access-key: ${{ secrets.aws-secret-access-key }}
+          aws-region: eu-west-2
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ inputs.service-name }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build a docker container and
+          # push it to ECR so that it can
+          # be deployed to ECS.
+          cd ${{ inputs.root-folder }}
+          docker build -f deploy/Dockerfile.production -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+      - name: generate deployment yml
+        id: generate-deployfile
+        env:
+          ECR_IMAGE: ${{ steps.build-image.outputs.image }}
+          NAMESPACE: ${{ inputs.namespace }}
+          BASEDOMAIN: ${{ vars.BASE_DOMAIN }}
+          CORS_WHITELIST: ${{ vars.CORS_WHITELIST }}
+          SUBDOMAIN: ${{ inputs.sub-domain }}
+          REPLICAS: ${{ inputs.replicas }}
+          BLOCK_FIELD_SUGGESTION: ${{ inputs.block-field-suggestion }}
+          ENABLE_STACK_TRACE: ${{ inputs.enable-stack-trace }}
+          ENABLE_INTROSPECTION: ${{ inputs.enable-introspection }}
+          MAX_TOKENS: ${{ inputs.max-tokens }}
+
+        run: |
+          cd ${{ inputs.root-folder }}
+          python ../core/deploy/replace_using_env_vars.py deploy/k8s/deployment.yml deploy/k8s/deployment.gen.yml
+
+      - name: deploy to cluster
+        uses: evosecurity/kubectl-aws-eks@master
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.kube-config-data }}
+        with:
+          args: apply -f  ${{ inputs.root-folder }}/deploy/k8s/deployment.gen.yml
+      - name: verify deployment
+        uses: evosecurity/kubectl-aws-eks@master
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.kube-config-data }}
+        with:
+          args: rollout status deployment/${{ inputs.dashed-service-name }} -n ${{ inputs.namespace }}

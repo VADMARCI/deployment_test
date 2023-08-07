@@ -1,0 +1,1 @@
+docker compose -f docker-compose.yml  -f car/docker-compose.yml  -f dealership/docker-compose.yml  -f gateway/docker-compose.yml  -f ws_service/docker-compose.yml  -f override/docker-compose.yml up  car  dealership  gateway  ws_service 

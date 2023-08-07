@@ -1,0 +1,28 @@
+FROM golang:alpine AS builder
+ENV CGO_ENABLED=0
+
+RUN apk update && apk add bash inotify-tools git curl
+
+WORKDIR /app
+
+# Let's cache modules retrieval - those don't change so often
+COPY ws_service/go.* ./
+COPY core/go.* ../core/
+RUN go mod download
+
+COPY core  ../core
+COPY ws_service ./
+
+RUN go build -ldflags="-w -s" -o ./server ./cmd/server/main.go
+
+FROM alpine
+WORKDIR /app
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+COPY --from=builder --chown=appuser:appgroup /app/server ./server
+
+USER appuser
+
+ENTRYPOINT ["./server"]
+

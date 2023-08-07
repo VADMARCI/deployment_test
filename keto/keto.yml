@@ -1,0 +1,17 @@
+version: v0.8.0-alpha.2
+
+log:
+  level: debug
+
+serve:
+  read:
+    host: 0.0.0.0
+    port: 4466
+  write:
+    host: 0.0.0.0
+    port: 4467
+
+namespaces: {
+  location: file:///home/ory/examples/namespaces.ts
+}
+dsn: mysql://root:password@tcp(db:3306)/keto?max_conns=20&max_idle_conns=4

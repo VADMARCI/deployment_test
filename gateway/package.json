@@ -1,0 +1,24 @@
+{
+  "name": "gateway",
+  "version": "1.0.0",
+  "main": "src/server.js",
+  "author": "Vlabs development",
+  "license": "",
+  "private": true,
+  "scripts": {
+    "start:debug": "nodemon --inspect=0.0.0.0 -L src/server.js",
+    "start-admin:debug": "nodemon --inspect=0.0.0.0 -L src/admin_server.js",
+    "start:production": "pm2-runtime start src/server.js -i max --max-memory-restart ${PM2_MAX_MEMORY:=200M}",
+    "start-admin:production": "pm2-runtime start src/admin_server.js -i max --max-memory-restart ${PM2_MAX_MEMORY:=200M}"
+  },
+  "dependencies": {
+    "@apollo/gateway": "^0.52.1",
+    "@escape.tech/graphql-armor": "^1.7.0",
+    "@escape.tech/graphql-armor-character-limit": "^1.7.1",
+    "apollo-log": "^1.0.1",
+    "apollo-server": "^3.11.1",
+    "axios": "^1.1.3",
+    "graphql": "^16.6.0",
+    "pm2": "^5.2.2"
+  }
+}

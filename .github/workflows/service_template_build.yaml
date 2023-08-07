@@ -1,0 +1,60 @@
+name: 'Go service build template'
+
+# Common template for go service deploy
+on:
+  workflow_call:
+    inputs:
+      root-folder:
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
+      branch:
+        required: true
+        type: string
+      service-name:
+        required: true
+        type: string
+
+    secrets:
+      aws-secret-access-key:
+        required: true
+      aws-access-key-id:
+        required: true
+
+    outputs:
+      image:
+        description: "The build image name tag"
+        value: ${{ jobs.deploy.outputs.image }}
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    outputs:
+      image: ${{ steps.build-image.outputs.image }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: LS
+        run: ls -la
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.aws-access-key-id }}
+          aws-secret-access-key: ${{ secrets.aws-secret-access-key }}
+          aws-region: eu-west-2
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ inputs.service-name }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -f ${{ inputs.root-folder }}/deploy/server/Dockerfile.production -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$IMAGE_TAG" >> $GITHUB_OUTPUT

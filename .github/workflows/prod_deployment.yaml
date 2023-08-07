@@ -1,0 +1,346 @@
+name: prod deployment
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+
+jobs:
+  car-changed:
+    runs-on: ubuntu-latest
+    environment: prod
+    outputs:
+      car: ${{ steps.filter.outputs.car  }}
+      core: ${{ steps.filter.outputs.core }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+      replicas: ${{steps.collect_vars.outputs.replicas}}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          base: ${{github.ref }}
+          filters: |
+            car:
+              - 'car/**'
+            core:
+              - 'core/**'
+            workflows:
+              - '.github/**'
+      - name: Changes
+        run: |
+            echo "car: ${{ steps.filter.outputs.car }}"
+            echo "car_count: ${{ steps.filter.outputs.car_count }}"
+            echo "core: ${{ steps.filter.outputs.core }}"
+            echo "core_count: ${{ steps.filter.outputs.core_count }}"
+      - name: collect vars
+        id: collect_vars
+        env:
+          REPLICAS: ${{vars.CONSULTANT_REPLICAS  }}
+        run: |
+          if [[ -z "$REPLICAS" || "$REPLICAS" == "" ]]; then
+            REPLICAS=1
+          fi
+          echo "replicas=$REPLICAS" >> "$GITHUB_OUTPUT"
+  car-build:
+    uses: ./.github/workflows/service_template_build.yaml
+    needs: [car-changed]
+    if: |
+        (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+        (needs.car-changed.outputs.car == 'true' ||
+          needs.car-changed.outputs.core == 'true' ||
+          needs.car-changed.outputs.workflows == 'true' )
+    with:
+      root-folder: 'car'
+      service-name: 'car'
+      environment: prod
+      branch: main
+    secrets:
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  car-migration:
+    uses: ./.github/workflows/service_template_migration.yaml
+    needs: [car-build]
+    if: |
+        (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    with:
+      root-folder: 'car'
+      service-name: 'car'
+      dashed-service-name: 'car'
+      namespace: prod
+      db-ending: prod
+      replicas: 2
+      environment: prod
+      branch: main
+      pod-type: deployment
+      image-tag:  ${{ needs.car-build.outputs.image }}
+
+    secrets:
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      write-db-host: ${{ secrets.WRITE_DB_HOST  }}
+      read-db-host: ${{ secrets.READ_DB_HOST  }}
+      kube-config-data: ${{ secrets.KUBE_CONFIG_DATA  }}
+      redis-host: ${{ secrets.REDIS_HOST  }}
+
+
+  car-deploy:
+    uses: ./.github/workflows/service_template_deploy.yaml
+    needs: [car-migration,car-build, car-changed
+      ]
+    if: |
+        (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    with:
+      root-folder: 'car'
+      service-name: 'car'
+      dashed-service-name: 'car'
+      namespace: prod
+      db-ending: prod
+      replicas: ${{ needs.car-changed.outputs.replicas}}
+      environment: prod
+      branch: main
+      pod-type: deployment
+      image-tag:  ${{ needs.car-build.outputs.image }}
+
+    secrets:
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      write-db-host: ${{ secrets.WRITE_DB_HOST  }}
+      read-db-host: ${{ secrets.READ_DB_HOST  }}
+      kube-config-data: ${{ secrets.KUBE_CONFIG_DATA  }}
+      redis-host: ${{ secrets.REDIS_HOST  }}
+
+
+  dealership-changed:
+    runs-on: ubuntu-latest
+    environment: prod
+    outputs:
+      dealership: ${{ steps.filter.outputs.dealership  }}
+      core: ${{ steps.filter.outputs.core }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+      replicas: ${{steps.collect_vars.outputs.replicas}}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          base: ${{github.ref }}
+          filters: |
+            dealership:
+              - 'dealership/**'
+            core:
+              - 'core/**'
+            workflows:
+              - '.github/**'
+      - name: Changes
+        run: |
+            echo "dealership: ${{ steps.filter.outputs.dealership }}"
+            echo "dealership_count: ${{ steps.filter.outputs.dealership_count }}"
+            echo "core: ${{ steps.filter.outputs.core }}"
+            echo "core_count: ${{ steps.filter.outputs.core_count }}"
+      - name: collect vars
+        id: collect_vars
+        env:
+          REPLICAS: ${{vars.KEY_MANAGER_REPLICAS  }}
+        run: |
+          if [[ -z "$REPLICAS" || "$REPLICAS" == "" ]]; then
+            REPLICAS=1
+          fi
+          echo "replicas=$REPLICAS" >> "$GITHUB_OUTPUT"
+  dealership-build:
+    uses: ./.github/workflows/service_template_build.yaml
+    needs: [dealership-changed]
+    if: |
+        (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+        (needs.dealership-changed.outputs.dealership == 'true' ||
+          needs.dealership-changed.outputs.core == 'true' ||
+          needs.dealership-changed.outputs.workflows == 'true' )
+    with:
+      root-folder: 'dealership'
+      service-name: 'dealership'
+      environment: prod
+      branch: main
+    secrets:
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  dealership-migration:
+    uses: ./.github/workflows/service_template_migration.yaml
+    needs: [dealership-build]
+    if: |
+        (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    with:
+      root-folder: 'dealership'
+      service-name: 'dealership'
+      dashed-service-name: 'dealership'
+      namespace: prod
+      db-ending: prod
+      replicas: 2
+      environment: prod
+      branch: main
+      pod-type: deployment
+      image-tag:  ${{ needs.dealership-build.outputs.image }}
+
+    secrets:
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      write-db-host: ${{ secrets.WRITE_DB_HOST  }}
+      read-db-host: ${{ secrets.READ_DB_HOST  }}
+      kube-config-data: ${{ secrets.KUBE_CONFIG_DATA  }}
+      redis-host: ${{ secrets.REDIS_HOST  }}
+
+
+  dealership-deploy:
+    uses: ./.github/workflows/service_template_deploy.yaml
+    needs: [dealership-migration,dealership-build, dealership-changed
+      ]
+    if: |
+        (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    with:
+      root-folder: 'dealership'
+      service-name: 'dealership'
+      dashed-service-name: 'dealership'
+      namespace: prod
+      db-ending: prod
+      replicas: ${{ needs.dealership-changed.outputs.replicas}}
+      environment: prod
+      branch: main
+      pod-type: deployment
+      image-tag:  ${{ needs.dealership-build.outputs.image }}
+
+    secrets:
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      write-db-host: ${{ secrets.WRITE_DB_HOST  }}
+      read-db-host: ${{ secrets.READ_DB_HOST  }}
+      kube-config-data: ${{ secrets.KUBE_CONFIG_DATA  }}
+      redis-host: ${{ secrets.REDIS_HOST  }}
+
+  ws_service-changed:
+    runs-on: ubuntu-latest
+    environment: prod
+    outputs:
+      ws_service: ${{ steps.filter.outputs.ws_service  }}
+      core: ${{ steps.filter.outputs.core }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+      replicas: ${{steps.collect_vars.outputs.replicas}}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          base: ${{github.ref }}
+          filters: |
+            ws_service:
+              - 'ws_service/**'
+            core:
+              - 'core/**'
+            workflows:
+              - '.github/**'
+      - name: Changes
+        run: |
+            echo "ws_service: ${{ steps.filter.outputs.ws_service }}"
+            echo "ws_service_count: ${{ steps.filter.outputs.ws_service_count }}"
+            echo "core: ${{ steps.filter.outputs.core }}"
+            echo "core_count: ${{ steps.filter.outputs.core_count }}"
+      - name: collect vars
+        id: collect_vars
+        env:
+          REPLICAS: ${{vars.WS_SERVICE_REPLICAS  }}
+        run: |
+          if [[ -z "$REPLICAS" || "$REPLICAS" == "" ]]; then
+            REPLICAS=1
+          fi
+          echo "replicas=$REPLICAS" >> "$GITHUB_OUTPUT"
+  ws_service-build:
+    uses: ./.github/workflows/service_template_build.yaml
+    needs: [ws_service-changed]
+    if: |
+        (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+        (needs.ws_service-changed.outputs.ws_service == 'true' ||
+          needs.ws_service-changed.outputs.core == 'true' ||
+          needs.ws_service-changed.outputs.workflows == 'true' )
+    with:
+      root-folder: 'ws_service'
+      service-name: 'ws_service'
+      environment: prod
+      branch: main
+    secrets:
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+
+  ws_service-deploy:
+    uses: ./.github/workflows/service_template_deploy.yaml
+    needs: [ws_service-build, ws_service-changed
+      ]
+    if: |
+        (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    with:
+      root-folder: 'ws_service'
+      service-name: 'ws_service'
+      dashed-service-name: 'ws-service'
+      namespace: prod
+      db-ending: prod
+      replicas: ${{ needs.ws_service-changed.outputs.replicas}}
+      environment: prod
+      branch: main
+      pod-type: statefulset
+      image-tag:  ${{ needs.ws_service-build.outputs.image }}
+
+    secrets:
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      write-db-host: ${{ secrets.WRITE_DB_HOST  }}
+      read-db-host: ${{ secrets.READ_DB_HOST  }}
+      kube-config-data: ${{ secrets.KUBE_CONFIG_DATA  }}
+      redis-host: ${{ secrets.REDIS_HOST  }}
+    
+  gateway-vars:
+    runs-on: ubuntu-latest
+    environment: prod
+    outputs:
+      replicas: ${{steps.collect_vars.outputs.replicas}}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: collect vars
+        id: collect_vars
+        env:
+          REPLICAS: ${{vars.GATEWAY_REPLICAS }}
+        run: |
+          if [[ -z "$REPLICAS" || "$REPLICAS" == "" ]]; then
+            REPLICAS=1
+          fi
+          echo "replicas=$REPLICAS" >> "$GITHUB_OUTPUT"
+
+
+  gateway-deploy:
+    needs: [car-deploy,
+      dealership-deploy,
+      ws_service-deploy,
+      gateway-vars]
+    uses: ./.github/workflows/gateway_template.yaml
+    if: github.event_name == 'push' && always()
+    with:
+      root-folder: gateway
+      service-name: gateway
+      dashed-service-name: gateway
+      namespace: prod
+      replicas: ${{ needs.gateway-vars.outputs.replicas}}
+      environment: prod
+      branch: main
+      sub-domain: prod
+      block-field-suggestion: false
+      enable-stack-trace: true
+      enable-introspection: true
+      max-tokens: 600
+    secrets:
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      kube-config-data: ${{ secrets.KUBE_CONFIG_DATA }}

@@ -1,0 +1,21 @@
+directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+directive @goModel(model: String, models: [String!]) on OBJECT | SCALAR | ENUM | INTERFACE | UNION
+directive @hooResolver(resolver: String!) on FIELD_DEFINITION
+scalar Time
+type Dealership {
+  id: ID!
+  cars: [Car]! @hooResolver(resolver: "genresolvers.DealershipCars(ctx, obj)") @goField(forceResolver: true)
+  city: String!
+  name: String!
+}
+type Query {
+  dealership(id: ID!): Dealership @hooResolver(resolver: "genresolvers.ReadDealership(ctx, id)")
+  dealerships(input: DealershipWhereInput!): [Dealership!]! @hooResolver(resolver: "genresolvers.ListDealership(ctx, input)")
+}
+type Mutation {
+  createDealership(input: CreateDealershipInput!): Dealership @hooResolver(resolver: "genresolvers.CreateDealership(ctx, input)")
+  deleteDealership(id: ID!): Boolean @hooResolver(resolver: "genresolvers.DeleteDealership(ctx, id)")
+}
+extend type Car @key(fields: "id") {
+  id: ID! @external
+}

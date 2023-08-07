@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  namespace: ${NAMESPACE}
+  name: dealership-migration
+spec:
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      containers:
+        - name: dealership-migration
+          image: ${ECR_IMAGE}
+          imagePullPolicy: Always
+          resources: { }
+          command: ["./migration"]
+          env:
+            - name: WRITE_DB_HOST
+              value: "${WRITE_DB_HOST}"
+            - name: READ_DB_HOST
+              value: "${READ_DB_HOST}"
+            - name: DATABASE
+              value: "dealership_${DB_ENDING}"
+      restartPolicy: Never
+  backoffLimit: 2

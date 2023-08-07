@@ -1,0 +1,40 @@
+version: '3.7'
+services:
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: deploy/Dockerfile
+    ports:
+      - 30${GATEWAY_DC_PORT}:30${GATEWAY_DC_PORT}
+      - 92${GATEWAY_DC_PORT}:92${GATEWAY_DC_PORT}
+    volumes:
+      - ./gateway:/app
+    environment:
+      - GATEWAY_PORT=30${GATEWAY_DC_PORT}
+      - CAR_URL=http://car:8000
+      - DEALERSHIP_URL=http://dealership:8000
+      - APOLLO_KEY=
+      - APOLLO_METRICS_KEY=
+      - POOL_TIME=10000
+      - CORS_WHITELIST=http://localhost:8000
+      - BLOCK_FIELD_SUGGESTION=false
+      - ENABLE_STACK_TRACE=true
+      - ENABLE_INTROSPECTION=true
+      - MAX_TOKENS=600
+    command: |
+      sh -c '
+          ./wait-for car:8000 -- \
+          ./wait-for dealership:8000 -- \
+      yarn start:debug'
+    restart: always
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:30${GATEWAY_DC_PORT}" ]
+      interval: 30s
+      timeout: 1s
+      retries: 3
+      start_period: 120s
+    depends_on:
+      - car
+      - dealership
+      - db
+

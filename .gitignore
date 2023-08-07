@@ -1,0 +1,8 @@
+/persistent-data/
+bin/*
+tmp/*
+air.log
+
+
+
+*/vendor/

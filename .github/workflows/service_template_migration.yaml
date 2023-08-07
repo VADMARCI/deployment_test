@@ -1,0 +1,121 @@
+name: 'Go service migration template'
+
+# Common template for go service migration
+on:
+  workflow_call:
+    inputs:
+      root-folder:
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
+      branch:
+        required: true
+        type: string
+      service-name:
+        required: true
+        type: string
+      dashed-service-name:
+        required: true
+        type: string
+      namespace:
+        required: true
+        type: string
+      db-ending:
+        required: true
+        type: string
+      replicas:
+        required: true
+        type: string
+      pod-type:
+        required: true
+        type: string
+        default: deployment
+      image-tag:
+        required: true
+        type: string
+    secrets:
+      aws-secret-access-key:
+        required: true
+      aws-access-key-id:
+        required: true
+      write-db-host:
+        required: true
+      read-db-host:
+        required: true
+      kube-config-data:
+        required: true
+      sentry-dns:
+        required: true
+      redis-host:
+        required: true
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: LS
+        run: ls -la
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.aws-access-key-id }}
+          aws-secret-access-key: ${{ secrets.aws-secret-access-key }}
+          aws-region: eu-west-2
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: Build image
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ inputs.service-name }}
+          IMAGE_TAG: ${{ inputs.image-tag }}
+        run: |
+             echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+      - name: generate migration job yml
+        id: generate-migration-job
+        env:
+          ECR_IMAGE: ${{ steps.build-image.outputs.image }}
+          NAMESPACE: ${{ inputs.namespace }}
+          WRITE_DB_HOST: ${{ secrets.write-db-host }}
+          READ_DB_HOST: ${{ secrets.read-db-host }}
+          DB_ENDING: ${{ inputs.db-ending }}
+        run: |
+          cd ${{ inputs.root-folder }}
+          python ../core/deploy/replace_using_env_vars.py deploy/k8s/migration-job.yml deploy/k8s/migration-job.gen.yml
+
+      - name: delete prev
+        uses: evosecurity/kubectl-aws-eks@master
+        continue-on-error: true
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.kube-config-data }}
+        with:
+          args: delete job ${{ inputs.dashed-service-name }}-migration -n ${{ inputs.namespace }}
+
+      - name: deploy job to cluster
+        uses: evosecurity/kubectl-aws-eks@master
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.kube-config-data }}
+        with:
+          args: apply -f ${{ inputs.root-folder }}/deploy/k8s/migration-job.gen.yml
+
+      - name: migration verification
+        uses: evosecurity/kubectl-aws-eks@master
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.kube-config-data }}
+        with:
+          args: wait --for=condition=complete --timeout=90s job/${{ inputs.dashed-service-name }}-migration -n ${{ inputs.namespace }}
+
+      - name: migration logs
+        if: ${{ failure() }}
+        uses: evosecurity/kubectl-aws-eks@master
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.kube-config-data }}
+        with:
+          args: logs jobs/${{ inputs.dashed-service-name }}-migration --tail=100 -n ${{ inputs.namespace }}
