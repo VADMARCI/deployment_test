@@ -1,17 +1,14 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"regexp"
-	"time"
 	"ws_service/presenters"
 	"ws_service/presenters/consumers"
 	"ws_service/presenters/graph"
 	middleware2 "ws_service/presenters/middleware"
 
-	"github.com/getsentry/sentry-go"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/pepusz/go_redirect/gateways/nats"
@@ -25,18 +22,18 @@ func main() {
 	if port == "" {
 		port = "8000"
 	}
-	err := sentry.Init(sentry.ClientOptions{
-		Dsn:              os.Getenv("SENTRY_DNS"),
-		AttachStacktrace: true,
-		Environment:      os.Getenv("ENV"),
-		Release:          fmt.Sprint(os.Getenv("BRANCH"), "(", os.Getenv("COMMIT"), ")"),
-	})
-	if err != nil {
-		log.Printf("sentry.Init: %s", err)
-	}
-	// Flush buffered events before the program terminates.
-	defer sentry.Flush(2 * time.Second)
-	defer sentry.Recover()
+	//err := sentry.Init(sentry.ClientOptions{
+	//	Dsn:              os.Getenv("SENTRY_DNS"),
+	//	AttachStacktrace: true,
+	//	Environment:      os.Getenv("ENV"),
+	//	Release:          fmt.Sprint(os.Getenv("BRANCH"), "(", os.Getenv("COMMIT"), ")"),
+	//})
+	//if err != nil {
+	//	log.Printf("sentry.Init: %s", err)
+	//}
+	//// Flush buffered events before the program terminates.
+	//defer sentry.Flush(2 * time.Second)
+	//defer sentry.Recover()
 
 	natsGateway := nats.NewGateway()
 

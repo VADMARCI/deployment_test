@@ -1,9 +1,6 @@
 package main
 
 import (
-	"fmt"
-
-	"github.com/getsentry/sentry-go"
 	goredislib "github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -20,7 +17,6 @@ import (
 	"github.com/pepusz/go_redirect/utils"
 	//"github.com/pepusz/go_redirect/messaging"
 	"car/buckets"
-	_ "car/ent/runtime"
 	"car/gateways/sql_db"
 	"car/presenters"
 	"car/presenters/graph"
@@ -29,8 +25,6 @@ import (
 	"car/streams"
 
 	"github.com/pepusz/go_redirect/gateways/auth"
-
-	"time"
 )
 
 //TODO separate migration from sql_db.go
@@ -43,18 +37,18 @@ func main() {
 		port = "8000"
 	}
 	logrus.Info("Starting car service for: default API")
-	err := sentry.Init(sentry.ClientOptions{
-		Dsn:              os.Getenv("SENTRY_DNS"),
-		AttachStacktrace: true,
-		Environment:      os.Getenv("ENV"),
-		Release:          fmt.Sprint(os.Getenv("BRANCH"), "(", os.Getenv("COMMIT"), ")"),
-	})
-	if err != nil {
-		log.Printf("sentry.Init: %s", err)
-	}
-	// Flush buffered events before the program terminates.
-	defer sentry.Flush(2 * time.Second)
-	defer sentry.Recover()
+	//err := sentry.Init(sentry.ClientOptions{
+	//	Dsn:              os.Getenv("SENTRY_DNS"),
+	//	AttachStacktrace: true,
+	//	Environment:      os.Getenv("ENV"),
+	//	Release:          fmt.Sprint(os.Getenv("BRANCH"), "(", os.Getenv("COMMIT"), ")"),
+	//})
+	//if err != nil {
+	//	log.Printf("sentry.Init: %s", err)
+	//}
+	//// Flush buffered events before the program terminates.
+	//defer sentry.Flush(2 * time.Second)
+	//defer sentry.Recover()
 	buckets.InitBuckets()
 	db := sql_db.SqlDb{}
 	db.Connect()
