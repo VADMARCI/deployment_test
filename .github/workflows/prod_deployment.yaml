@@ -72,7 +72,7 @@ jobs:
       dashed-service-name: 'car'
       namespace: prod
       db-ending: prod
-      replicas: 2
+      replicas: 1
       environment: prod
       branch: main
       pod-type: deployment
@@ -179,7 +179,7 @@ jobs:
       dashed-service-name: 'dealership'
       namespace: prod
       db-ending: prod
-      replicas: 2
+      replicas: 1
       environment: prod
       branch: main
       pod-type: deployment
