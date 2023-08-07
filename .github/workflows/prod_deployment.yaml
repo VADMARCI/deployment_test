@@ -84,6 +84,7 @@ jobs:
       write-db-host: ${{ secrets.WRITE_DB_HOST  }}
       read-db-host: ${{ secrets.READ_DB_HOST  }}
       kube-config-data: ${{ secrets.KUBE_CONFIG_DATA  }}
+      sentry-dns: ${{ secrets.SENTRY_DNS  }}
       redis-host: ${{ secrets.REDIS_HOST  }}
 
 
@@ -111,6 +112,7 @@ jobs:
       write-db-host: ${{ secrets.WRITE_DB_HOST  }}
       read-db-host: ${{ secrets.READ_DB_HOST  }}
       kube-config-data: ${{ secrets.KUBE_CONFIG_DATA  }}
+      sentry-dns: ${{ secrets.SENTRY_DNS  }}
       redis-host: ${{ secrets.REDIS_HOST  }}
 
 
@@ -191,6 +193,7 @@ jobs:
       write-db-host: ${{ secrets.WRITE_DB_HOST  }}
       read-db-host: ${{ secrets.READ_DB_HOST  }}
       kube-config-data: ${{ secrets.KUBE_CONFIG_DATA  }}
+      sentry-dns: ${{ secrets.SENTRY_DNS  }}
       redis-host: ${{ secrets.REDIS_HOST  }}
 
 
@@ -218,6 +221,7 @@ jobs:
       write-db-host: ${{ secrets.WRITE_DB_HOST  }}
       read-db-host: ${{ secrets.READ_DB_HOST  }}
       kube-config-data: ${{ secrets.KUBE_CONFIG_DATA  }}
+      sentry-dns: ${{ secrets.SENTRY_DNS  }}
       redis-host: ${{ secrets.REDIS_HOST  }}
 
   ws_service-changed:
@@ -299,6 +303,7 @@ jobs:
       write-db-host: ${{ secrets.WRITE_DB_HOST  }}
       read-db-host: ${{ secrets.READ_DB_HOST  }}
       kube-config-data: ${{ secrets.KUBE_CONFIG_DATA  }}
+      sentry-dns: ${{ secrets.SENTRY_DNS  }}
       redis-host: ${{ secrets.REDIS_HOST  }}
     
   gateway-vars:
