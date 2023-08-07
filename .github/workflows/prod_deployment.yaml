@@ -112,7 +112,6 @@ jobs:
       write-db-host: ${{ secrets.WRITE_DB_HOST  }}
       read-db-host: ${{ secrets.READ_DB_HOST  }}
       kube-config-data: ${{ secrets.KUBE_CONFIG_DATA  }}
-      redis-host: ${{ secrets.REDIS_HOST  }}
 
 
   dealership-changed:
@@ -220,7 +219,6 @@ jobs:
       write-db-host: ${{ secrets.WRITE_DB_HOST  }}
       read-db-host: ${{ secrets.READ_DB_HOST  }}
       kube-config-data: ${{ secrets.KUBE_CONFIG_DATA  }}
-      redis-host: ${{ secrets.REDIS_HOST  }}
 
   ws_service-changed:
     runs-on: ubuntu-latest
