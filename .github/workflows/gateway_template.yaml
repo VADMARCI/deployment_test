@@ -86,6 +86,7 @@ jobs:
           ECR_IMAGE: ${{ steps.build-image.outputs.image }}
           NAMESPACE: ${{ inputs.namespace }}
           BASEDOMAIN: ${{ vars.BASE_DOMAIN }}
+          CERTIFICATE_ARN: ${{ secrets.CERTIFICATE_ARN }}
           CORS_WHITELIST: ${{ vars.CORS_WHITELIST }}
           SUBDOMAIN: ${{ inputs.sub-domain }}
           REPLICAS: ${{ inputs.replicas }}

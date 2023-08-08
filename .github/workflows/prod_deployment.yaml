@@ -343,3 +343,47 @@ jobs:
       aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
       aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       kube-config-data: ${{ secrets.KUBE_CONFIG_DATA }}
+
+  gateway-admin-vars:
+    runs-on: ubuntu-latest
+    environment: develop
+    outputs:
+      replicas: ${{steps.collect_vars.outputs.replicas}}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: collect vars
+        id: collect_vars
+        env:
+          REPLICAS: ${{vars.GATEWAY_ADMIN_REPLICAS }}
+        run: |
+          if [[ -z "$REPLICAS" || "$REPLICAS" == "" ]]; then
+            REPLICAS=1
+          fi
+          echo "replicas=$REPLICAS" >> "$GITHUB_OUTPUT"
+
+
+  gateway-admin-deploy:
+    needs: [ car-deploy,
+             dealership-deploy,
+             ws_service-deploy,
+             gateway-admin-vars ]
+    uses: ./.github/workflows/gateway_template.yaml
+    if: github.event_name == 'push' && always()
+    with:
+      root-folder: gateway_admin
+      service-name: gateway_admin
+      dashed-service-name: gateway-admin
+      namespace: prod
+      replicas: ${{ needs.gateway-admin-vars.outputs.replicas}}
+      environment: prod
+      branch: main
+      sub-domain: prod
+      block-field-suggestion: false
+      enable-stack-trace: true
+      enable-introspection: true
+      max-tokens: 600
+    secrets:
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      kube-config-data: ${{ secrets.KUBE_CONFIG_DATA }}
