@@ -97,7 +97,7 @@ jobs:
         run: |
           cd ${{ inputs.root-folder }}
           python ../core/deploy/replace_using_env_vars.py deploy/k8s/deployment.yml deploy/k8s/deployment.gen.yml
-          python ../core/deploy/replace_using_env_vars.py ../core/ingress.yml ../core/ingress.gen.yml
+          python ../core/deploy/replace_using_env_vars.py ../core/ingress.yaml ../core/ingress.gen.yml
 
       - name: deploy to cluster
         uses: evosecurity/kubectl-aws-eks@master
