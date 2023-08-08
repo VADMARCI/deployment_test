@@ -1,0 +1,11 @@
+FROM node:19-alpine
+
+#RUN yarn global add nodemon
+
+WORKDIR /app
+
+COPY . ./
+
+RUN npm install
+
+#ENTRYPOINT ["yarn", "start:production"]

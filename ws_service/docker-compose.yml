@@ -28,6 +28,7 @@ services:
       - MINIO_ENDPOINT=minio:9000
 
       - AUTH_URL=http://auth:8000
+      - AUTH_ADMIN_URL=http://auth_admin:8000
     depends_on:
       - db
       - ns1
@@ -41,4 +42,43 @@ services:
       /core/wait-for ns2:4222 -- \
       /core/wait-for ns3:4222 -- \
       air -c .air.toml'
+
+  ws_service_admin:
+    build:
+      context: .
+      dockerfile: ws_service/deploy/server/Dockerfile
+    ports:
+      - "40${WS_SERVICE_ADMIN_DC_PORT}:8000"
+      - "70${WS_SERVICE_ADMIN_DC_PORT}:9000"
+    volumes:
+      - ./ws_service:/ws_service
+      - ./core:/core
+    environment:
+      - WRITE_DB_HOST=root:password@tcp(db:3306)
+      - READ_DB_HOST=root:password@tcp(db:3306)
+      - KETO_WRITE_ENDPOINT=http://keto:4467
+      - KETO_CHECK_ENDPOINT=http://keto:4466
+      - DATABASE=ws_service
+      - REDIS_HOST=redis:6379
+      - REDIS_PRE_TAG=ws_service
+      - ECHO_PORT=8000
+      - DEV=true
+      - JWT_TOKEN_SECRET="jwt_token_secret"
+      - MINIO_ENDPOINT=minio:9000
+
+      - AUTH_URL=http://auth:8000
+      - AUTH_ADMIN_URL=http://auth_admin:8000
+    depends_on:
+      - db
+      - ns1
+      - ns2
+      - ns3
+      - minio
+      - redis
+    command: |
+      sh -c '/core/wait-for db:3306 -- \
+      /core/wait-for ns1:4222 -- \
+      /core/wait-for ns2:4222 -- \
+      /core/wait-for ns3:4222 -- \
+      air -c .air_admin.toml'
 

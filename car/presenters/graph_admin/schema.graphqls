@@ -1,0 +1,18 @@
+directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+directive @goModel(model: String, models: [String!]) on OBJECT | SCALAR | ENUM | INTERFACE | UNION
+directive @hooResolver(resolver: String!) on FIELD_DEFINITION
+scalar Time
+type Car @key(fields: "id") {
+  id: ID!
+  isSold: Boolean!
+  name: String!
+  price: Int!
+}
+type Query {
+  car(id: ID!): Car @hooResolver(resolver: "genresolvers.ReadCar(ctx, id)")
+  cars(input: CarWhereInput!): [Car!]! @hooResolver(resolver: "genresolvers.ListCar(ctx, input)")
+}
+type Mutation {
+  createCar(input: CreateCarInput!): Car @hooResolver(resolver: "genresolvers.CreateCar(ctx, input)")
+  deleteCar(id: ID!): Boolean @hooResolver(resolver: "genresolvers.DeleteCar(ctx, id)")
+}

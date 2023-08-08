@@ -97,13 +97,17 @@ jobs:
         run: |
           cd ${{ inputs.root-folder }}
           python ../core/deploy/replace_using_env_vars.py deploy/k8s/deployment.yml deploy/k8s/deployment.gen.yml
+          python ../core/deploy/replace_using_env_vars.py ../core/ingress.yml ../core/ingress.gen.yml
 
       - name: deploy to cluster
         uses: evosecurity/kubectl-aws-eks@master
         env:
           KUBE_CONFIG_DATA: ${{ secrets.kube-config-data }}
         with:
-          args: apply -f  ${{ inputs.root-folder }}/deploy/k8s/deployment.gen.yml
+          args: |
+            cd ${{ inputs.root-folder }}
+            apply -f  deploy/k8s/deployment.gen.yml
+            apply -f  ../core/ingress.gen.yml
       - name: verify deployment
         uses: evosecurity/kubectl-aws-eks@master
         env:

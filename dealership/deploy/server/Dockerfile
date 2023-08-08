@@ -16,4 +16,5 @@ COPY dealership ./
 
 
 RUN go build -gcflags "all=-N -l" -o ./bin/server ./cmd/server/main.go
+RUN go build -gcflags "all=-N -l" -o ./bin/admin ./cmd/server/main_admin.go
 

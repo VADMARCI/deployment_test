@@ -1,0 +1,64 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: ${NAMESPACE}
+  name: gateway-admin
+  labels:
+    app: gateway-admin
+spec:
+  replicas: ${REPLICAS}
+  selector:
+    matchLabels:
+      app: gateway-admin
+  template:
+    metadata:
+      labels:
+        app: gateway-admin
+    spec:
+      imagePullSecrets:
+        - name: dockerregistrykey
+      containers:
+        - image: ${ECR_IMAGE}
+          name: gateway-admin
+          imagePullPolicy: Always
+          command:
+            - "yarn"
+            - "start:production"
+          resources: { }
+          ports:
+            - containerPort: 3000
+          env:
+            - name: CAR_ADMIN_URL
+              value: "http://car-admin:8000"
+            - name: DEALERSHIP_ADMIN_URL
+              value: "http://dealership-admin:8000"
+            - name: APOLLO_GRAPH_VARIANT
+              value: ${NAMESPACE}
+            - name: CORS_WHITELIST
+              value: "${CORS_WHITELIST}"
+            - name: BLOCK_FIELD_SUGGESTION
+              value: "${BLOCK_FIELD_SUGGESTION}"
+            - name: ENABLE_STACK_TRACE
+              value: "${ENABLE_STACK_TRACE}"
+            - name: ENABLE_INTROSPECTION
+              value: "${ENABLE_INTROSPECTION}"
+            - name: MAX_TOKENS
+              value: "${MAX_TOKENS}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: ${NAMESPACE}
+  name: gateway-admin-service
+  labels:
+    run: gateway-admin
+spec:
+  ports:
+    - port: 80
+      targetPort: 3000
+      protocol: TCP
+      name: http-gateway
+  type: NodePort
+  selector:
+    app: gateway-admin

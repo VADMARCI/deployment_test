@@ -41,3 +41,40 @@ services:
       /core/wait-for ns3:4222 -- \
       air -c .air.toml'
 
+  car_admin:
+    build:
+      context: .
+      dockerfile: car/deploy/server/Dockerfile
+    ports:
+      - "40${CAR_ADMIN_DC_PORT}:8000"
+      - "70${CAR_ADMIN_DC_PORT}:9000"
+    volumes:
+      - ./car:/car
+      - ./core:/core
+    environment:
+      - WRITE_DB_HOST=root:password@tcp(db:3306)
+      - READ_DB_HOST=root:password@tcp(db:3306)
+      - KETO_WRITE_ENDPOINT=http://keto:4467
+      - KETO_CHECK_ENDPOINT=http://keto:4466
+      - DATABASE=car
+      - REDIS_HOST=redis:6379
+      - REDIS_PRE_TAG=car
+      - ECHO_PORT=8000
+      - DEV=true
+      - JWT_TOKEN_SECRET="jwt_token_secret"
+      - MINIO_ENDPOINT=minio:9000
+
+    depends_on:
+      - db
+      - ns1
+      - ns2
+      - ns3
+      - minio
+      - redis
+    command: |
+      sh -c '/core/wait-for db:3306 -- \
+      /core/wait-for ns1:4222 -- \
+      /core/wait-for ns2:4222 -- \
+      /core/wait-for ns3:4222 -- \
+      air -c .air_admin.toml'
+

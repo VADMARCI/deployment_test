@@ -14,6 +14,7 @@ COPY ./dealership ./
 COPY ./core ../core
 
 RUN go build -ldflags="-w -s" -o ./server ./cmd/server/main.go
+RUN go build -ldflags="-w -s" -o ./admin ./cmd/server/main_admin.go
 RUN go build -ldflags="-w -s" -o ./migration ./cmd/migration/main.go
 
 
@@ -26,5 +27,6 @@ COPY --from=builder /app/migration ./migration
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 COPY --from=builder --chown=appuser:appgroup /app/server ./server
+COPY --from=builder --chown=appuser:appgroup /app/admin ./admin
 COPY --from=builder --chown=appuser:appgroup /app/migration ./migration
 USER appuser
