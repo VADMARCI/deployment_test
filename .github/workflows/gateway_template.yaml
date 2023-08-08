@@ -105,9 +105,8 @@ jobs:
           KUBE_CONFIG_DATA: ${{ secrets.kube-config-data }}
         with:
           args: |
-            cd ${{ inputs.root-folder }}
-            apply -f  deploy/k8s/deployment.gen.yml
-            apply -f  ../core/ingress.gen.yml
+            apply -f  ${{ inputs.root-folder }}/deploy/k8s/deployment.gen.yml
+            apply -f  ${{ inputs.root-folder }}/../core/ingress.gen.yml
       - name: verify deployment
         uses: evosecurity/kubectl-aws-eks@master
         env:
