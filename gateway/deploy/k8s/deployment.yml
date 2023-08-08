@@ -26,11 +26,7 @@ spec:
             - "yarn"
             - "start:production"
           resources: { }
-          lifecycle:
-            postStart: # same as istio-proxy readiness probe, when this hook exec failed, the app container will be restarted
-              httpGet:
-                path: /healthz/ready
-                port: 15020
+
           ports:
             - containerPort: 3000
           env:

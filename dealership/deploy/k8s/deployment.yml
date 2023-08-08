@@ -23,11 +23,7 @@ spec:
           name: dealership
           imagePullPolicy: Always
           resources: { }
-          lifecycle:
-            postStart: # same as istio-proxy readiness probe, when this hook exec failed, the app container will be restarted
-              httpGet:
-                path: /healthz/ready
-                port: 15020
+
           ports:
             - containerPort: 8000
           command:
