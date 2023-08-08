@@ -43,7 +43,8 @@ spec:
               value: ${BRANCH}
             - name: COMMIT
               value: ${COMMIT}
-
+            - name: NATS_SERVERS
+              value: "nats://dev-playground-nats:4222"
       terminationGracePeriodSeconds: 5
 ---
 apiVersion: v1

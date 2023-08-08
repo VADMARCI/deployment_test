@@ -51,6 +51,8 @@ spec:
               value: ${COMMIT}
             - name: MINIO_ENDPOINT
               value: "s3.amazonaws.com"
+            - name: NATS_SERVERS
+              value: "nats://dev-playground-nats:4222"
 
       terminationGracePeriodSeconds: 5
 ---
